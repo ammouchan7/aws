@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion : 2010-09-09
+Description: 'IAM-user'
+
+Mappings:
+  Param:
+    IAMUserName:
+      AdminUserName : DEV_User
+    IAMGroupName:
+      ConsoleAccessAdminGroupName : DEV_Console_Group  
+      SwitchAdminGroupName        : DEV_Switch_Group 
+    IAMRoleName:
+      AdminRoleName : DEV_User_Role
+
+    IAMPolicyName:
+      SwitchAdminGroupPolicy : DEV_Switch_Group_Policy
+
+Resources:
+  
+  AdminUser:
+    Type: AWS::IAM::User
+    DeletionPolicy: Delete
+    Properties:
+      UserName: !FindInMap [Param,IAMUserName, AdminUserName]
+      Groups:
+        - !FindInMap [Param,IAMGroupName, ConsoleAccessAdminGroupName]
+        - !FindInMap [Param,IAMGroupName, SwitchAdminGroupName]
+      Path: /
+      LoginProfile:
+        Password: P@ssw0rd
+
+  ConsoleAccessAdminGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !FindInMap [Param,IAMGroupName, ConsoleAccessAdminGroupName]
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        - "arn:aws:iam::aws:policy/IAMUserChangePassword"
+
+  SwitchAdminGroup:
+    Type: AWS::IAM::Group
+    DeletionPolicy: Delete
+    Properties:
+      GroupName: !FindInMap [Param,IAMGroupName, SwitchAdminGroupName]
+      Path: /
+
+  SwitchAdminPolicy:
+    Type: AWS::IAM::Policy
+    DeletionPolicy: Delete
+    Properties:
+      PolicyName: !FindInMap [Param,IAMPolicyName, SwitchAdminGroupPolicy]
+      PolicyDocument :
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Resource: !GetAtt 'AdminRole.Arn'
+      Groups:
+        - !Ref SwitchAdminGroup
+
+  AdminRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    Properties:
+      RoleName: !FindInMap [Param,IAMRoleName, AdminRoleName]
+      ManagedPolicyArns:  
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action:  sts:AssumeRole
+

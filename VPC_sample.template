@@ -1,0 +1,892 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Web-JTRANS2 Development Environment(VPC,Subnet,IGW,EIP,NAT Gateway)'
+Mappings:
+  Param:
+    Name:
+      VPCName: PT-WJ2-VPC-001
+      
+      Subnet1NameOPDZNPN:  PT-WJ2-SUB-OPDZNPN-001
+      Subnet2NameOPDZNPN:  PT-WJ2-SUB-OPDZNPN-002
+      
+      Subnet1NameOPEC2NPN: PT-WJ2-SUB-OPEC2NPN-001
+      Subnet2NameOPEC2NPN: PT-WJ2-SUB-OPEC2NPN-002
+      Subnet1NameOPEC2PAN: PT-WJ2-SUB-OPEC2PAN-001
+      Subnet2NameOPEC2PAN: PT-WJ2-SUB-OPEC2PAN-002
+
+      Subnet1NameAWSPAN:   PT-WJ2-SUB-AWSPAN-001
+      Subnet2NameAWSPAN:   PT-WJ2-SUB-AWSPAN-002
+      
+      Subnet1NameAWSNPN:   PT-WJ2-SUB-AWSNPN-001
+      Subnet2NameAWSNPN:   PT-WJ2-SUB-AWSNPN-002
+
+
+#      IGWName: PT-WJ2-IGW-001
+#      NGW1NameOPDZNPN: PT-WJ2-NGW-OP-001
+#      NGW2NameOPDZNPN: PT-WJ2-NGW-OP-002
+      DHCPOptionsName: PT-WJ2-DOPT-001
+      
+
+      NACLNameOPDZNPN:  PT-WJ2-ACL-OPDZNPN-001
+      NACLNameOPEC2PAN: PT-WJ2-ACL-OPEC2PAN-001
+      NACLNameOPEC2NPN: PT-WJ2-ACL-OPEC2NPN-001
+      NACLNameAWSPAN:   PT-WJ2-ACL-AWSPAN-001
+      NACLNameAWSNPN:   PT-WJ2-ACL-AWSNPN-001
+      
+      
+      RouteTableNameOPDZNPN:  PT-WJ2-RT-OPDZNPN-001
+      RouteTableNameSVEC2PAN: PT-WJ2-RT-SVEC2PAN-001
+      RouteTableNameOPEC2PAN1: PT-WJ2-RT-OPEC2PAN-001
+      RouteTableNameOPEC2PAN2: PT-WJ2-RT-OPEC2PAN-002
+      RouteTableNameOPEC2NPN1: PT-WJ2-RT-OPEC2NPN-001
+      RouteTableNameOPEC2NPN2: PT-WJ2-RT-OPEC2NPN-002
+      RouteTableNameAWSPAN:   PT-WJ2-RT-AWSPAN-001
+      RouteTableNameAWSNPN1:  PT-WJ2-RT-AWSNPN-001
+      RouteTableNameAWSNPN2:  PT-WJ2-RT-AWSNPN-002      
+      
+      
+      
+    CidrBlock:
+#      VPCCidr1: 172.31.130.0/23
+      VPCCidr: 172.25.178.0/23
+      
+      Subnet1CidrOPEC2PAN:  172.25.178.0/27     #�`���T�[�o#1
+      Subnet2CidrOPEC2PAN:  172.25.178.32/27    #�`���T�[�o#2
+      Subnet1CidrOPDZNPN:   172.25.178.128/27   #NatGateway
+      Subnet2CidrOPDZNPN:   172.25.178.160/27   #NatGateway
+      Subnet1CidrOPEC2NPN:  172.25.178.192/27   #���ݑ�T�[�o#1
+      Subnet2CidrOPEC2NPN:  172.25.178.224/27   #���ݑ�T�[�o#2
+
+      Subnet1CidrAWSPAN:   172.25.179.64/27
+      Subnet2CidrAWSPAN:   172.25.179.96/27
+      Subnet1CidrAWSNPN:   172.25.179.128/27
+      Subnet2CidrAWSNPN:   172.25.179.160/27
+      
+#    EIP:
+#      NGW1EIPIPAdrOPE: 3.114.55.111
+#      NGW1EIPAllocationIDOP: eipalloc-0153058736ef4a66d
+#      NGW2EIPIPAdrOPE: 35.72.222.132
+#      NGW2EIPAllocationIDOP: eipalloc-06c5ced2f3370a1f2
+      
+
+    AZ:
+      AZ1: ap-northeast-1a
+      AZ2: ap-northeast-1c
+    
+    CIDR:
+      ALL:              0.0.0.0/0
+
+  Output:
+    Name:
+      outVPCId: VPC-001
+      outSubnet1OPDZNPN:  SUB-OPDZNPN-001
+      outSubnet2OPDZNPN:  SUB-OPDZNPN-002
+      outSubnet1OPEC2PAN: SUB-OPEC2PAN-001
+      outSubnet2OPEC2PAN: SUB-OPEC2PAN-002
+      outSubnet1OPEC2NPN: SUB-OPEC2NPN-001
+      outSubnet2OPEC2NPN: SUB-OPEC2NPN-002
+      outSubnet1AWSPAN:   SUB-AWSPAN-001
+      outSubnet2AWSPAN:   SUB-AWSPAN-002
+      outSubnet1AWSNPN:   SUB-AWSNPN-001
+      outSubnet2AWSNPN:   SUB-AWSNPN-002
+#      outIGW: IGW-001
+#      outNGW1OPE: NGW-OP-001
+#      outNGW2OPE: NGW-OP-002
+#      outNGW1SV: NGW-SV-001
+#      outNGW2SV: NGW-SV-002
+      
+      outRouteTableOPEC2PAN1: DT-WJ2-STK-VPC-002-OUT-RT-OPEC2PAN1
+      outRouteTableOPEC2PAN2: DT-WJ2-STK-VPC-002-OUT-RT-OPEC2PAN2
+      outRouteTableOPEC2NPN1: DT-WJ2-STK-VPC-002-OUT-RT-OPEC2NPN1
+      outRouteTableOPEC2NPN2: DT-WJ2-STK-VPC-002-OUT-RT-OPEC2NPN2
+
+
+Resources:
+#
+# VPC
+#
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, VPCCidr]
+      InstanceTenancy: default
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, VPCName ]
+
+
+#
+# Subnet
+#
+#
+# - EC2 (PAN�L)
+  Subnet1OPEC2PAN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet1CidrOPEC2PAN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ1 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet1NameOPEC2PAN ]
+  Subnet2OPEC2PAN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet2CidrOPEC2PAN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ2 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet2NameOPEC2PAN ]
+
+
+# - DMZ (OPEPAN��)
+  Subnet1OPDZNPN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet1CidrOPDZNPN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ1 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet1NameOPDZNPN]
+  Subnet2OPDZNPN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet2CidrOPDZNPN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ2 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet2NameOPDZNPN ]
+          
+# - EC2 (PAN��)
+  Subnet1OPEC2NPN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet1CidrOPEC2NPN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ1 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet1NameOPEC2NPN ]
+  Subnet2OPEC2NPN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet2CidrOPEC2NPN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ2 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet2NameOPEC2NPN ]
+
+#
+# - AWS�T�[�r�X (PAN�L)
+  Subnet1AWSPAN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet1CidrAWSPAN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ1 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet1NameAWSPAN ]
+  Subnet2AWSPAN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet2CidrAWSPAN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ2 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet2NameAWSPAN ]
+          
+  Subnet1AWSNPN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet1CidrAWSNPN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ1 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet1NameAWSNPN ]
+  Subnet2AWSNPN:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      CidrBlock: !FindInMap [Param, CidrBlock, Subnet2CidrAWSNPN ]
+      AvailabilityZone: !FindInMap [Param, AZ, AZ2 ]
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, Subnet2NameAWSNPN ]
+
+#
+# DHCP Options Set
+#
+# - DHCP Options Set
+  DHCPOptions:
+    Type: AWS::EC2::DHCPOptions
+    Properties:
+      DomainName: "ap-northeast-1.compute.internal"
+      DomainNameServers: 
+       - "AmazonProvidedDNS"
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, DHCPOptionsName ]
+# - DHCPOptionsAssociation
+  VPCDHCPOptionsAssociation:
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+    DependsOn: ["DHCPOptions", "VPC"]
+    Properties:
+      DhcpOptionsId: !Ref DHCPOptions
+      VpcId: !Ref VPC
+#
+# Internet Gateway(IGW)
+#  IGW:
+#    Type: AWS::EC2::InternetGateway
+#    Properties:
+#      Tags:
+#        - Key: Name
+#          Value: !FindInMap [Param, Name, IGWName ]
+#  IGWAttachmentIGW:
+#    Type: AWS::EC2::VPCGatewayAttachment
+#    DependsOn: ["VPC", "IGW"]
+#    Properties:
+#      VpcId: !Ref VPC
+#      InternetGatewayId: !Ref IGW
+#
+# NAT Gateway
+#
+# - NAT Gateway 1(�^�pPAN��)
+#  NATGatewaySubnet1OPDZNPN:
+#    Type: AWS::EC2::NatGateway
+#    DependsOn: Subnet1OPDZNPN
+#    Properties:
+#      AllocationId: !FindInMap [Param, EIP, NGW1EIPAllocationIDOP ]
+#      SubnetId: !Ref Subnet1OPDZNPN
+#      Tags:
+#        - Key: Name
+#          Value: !FindInMap [Param, Name, NGW1NameOPDZNPN ]
+## - NAT Gateway 2(�^�pPAN��)
+#  NATGatewaySubnet2OPDZNPN:
+#    Type: AWS::EC2::NatGateway
+#    DependsOn: Subnet2OPDZNPN
+#    Properties:
+#      AllocationId: !FindInMap [Param, EIP, NGW2EIPAllocationIDOP ]
+#      SubnetId: !Ref Subnet2OPDZNPN
+#      Tags:
+#        - Key: Name
+#          Value: !FindInMap [Param, Name, NGW2NameOPDZNPN ]
+          
+#---------------------------------------------------------------------
+# NetworkACL
+#---------------------------------------------------------------------
+#--------------------------------------------------
+# - DMZ(NPN) for OPE
+#--------------------------------------------------
+  NACLOPDZNPN:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, NACLNameOPDZNPN ]
+  SubnetNetworkAclAssociationNACLOPDZNPN1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet1OPDZNPN
+      
+      NetworkAclId: !Ref NACLOPDZNPN
+  SubnetNetworkAclAssociationNACLOPDZNPN2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet2OPDZNPN
+      NetworkAclId: !Ref NACLOPDZNPN
+
+  NACLRuleAllowAllIngressOPDZNPN1:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLOPDZNPN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: false
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLOPDZNPN
+  NACLRuleAllowAllEgressOPDZNPN2:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLOPDZNPN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLOPDZNPN
+
+#--------------------------------------------------
+# - EC2 service(PAN)
+#--------------------------------------------------
+  NACLOPEC2PAN:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, NACLNameOPEC2PAN ]
+  SubnetNetworkAclAssociationNACLOPEC2PAN1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet1OPEC2PAN 
+      NetworkAclId: !Ref NACLOPEC2PAN
+  SubnetNetworkAclAssociationNACLOPEC2PAN2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet2OPEC2PAN
+      NetworkAclId: !Ref NACLOPEC2PAN
+  NACLRuleAllowAllIngressOPEC2PAN1:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLOPEC2PAN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: false
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLOPEC2PAN
+  NACLRuleAllowAllEgressOPEC2PAN2:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLOPEC2PAN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLOPEC2PAN
+
+#--------------------------------------------------
+# - EC2 service(NPN)
+#--------------------------------------------------
+  NACLOPEC2NPN:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, NACLNameOPEC2NPN ]
+  SubnetNetworkAclAssociationNACLOPEC2NPN1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet1OPEC2NPN
+      NetworkAclId: !Ref NACLOPEC2NPN
+  SubnetNetworkAclAssociationNACLOPEC2NPN2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet2OPEC2NPN
+      NetworkAclId: !Ref NACLOPEC2NPN
+  NACLRuleAllowAllIngressOPEC2NPN1:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLOPEC2NPN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: false
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLOPEC2NPN
+  NACLRuleAllowAllEgressOPEC2NPN2:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLOPEC2NPN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLOPEC2NPN
+
+#--------------------------------------------------
+# - AWS Service(PAN)
+#--------------------------------------------------
+  NACLAWSPAN:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, NACLNameAWSPAN ]
+  SubnetNetworkAclAssociationNACLAWSPAN1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet1AWSPAN
+      NetworkAclId: !Ref NACLAWSPAN
+  SubnetNetworkAclAssociationNACLAWSPAN2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet2AWSPAN
+      NetworkAclId: !Ref NACLAWSPAN
+  NACLRuleAllowAllIngressAWSPAN1:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLAWSPAN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: false
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLAWSPAN
+  NACLRuleAllowAllEgressAWSPAN2:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLAWSPAN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLAWSPAN
+
+#--------------------------------------------------
+# - AWS Service(NPN)
+#--------------------------------------------------
+  NACLAWSNPN:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, NACLNameAWSNPN ]
+  SubnetNetworkAclAssociationNACLAWSNPN1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet1AWSNPN
+      NetworkAclId: !Ref NACLAWSNPN
+  SubnetNetworkAclAssociationNACLAWSNPN2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref Subnet2AWSNPN
+      NetworkAclId: !Ref NACLAWSNPN
+  NACLRuleAllowAllIngressAWSNPN1:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLAWSNPN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: false
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLAWSNPN
+  NACLRuleAllowAllEgressAWSNPN2:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: NACLAWSNPN
+    Properties:
+      CidrBlock: !FindInMap [Param, CIDR, ALL ]
+      Egress: true
+      Protocol: -1
+      RuleAction: allow
+      RuleNumber: 100
+      NetworkAclId: !Ref NACLAWSNPN
+#
+#---------------------------------------------------------------------
+# RouteTable
+#---------------------------------------------------------------------
+#--------------------------------------------------
+# - DMZ(PAN) for OPE
+#--------------------------------------------------
+  RouteTableOPDZNPN:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameOPDZNPN ]
+  RouteAssocOPDZNPN1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableOPDZNPN
+    Properties:
+      RouteTableId: !Ref RouteTableOPDZNPN
+      SubnetId: !Ref Subnet1OPDZNPN
+  RouteAssocOPDZNPN2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableOPDZNPN
+    Properties:
+      RouteTableId: !Ref RouteTableOPDZNPN
+      SubnetId: !Ref Subnet2OPDZNPN
+#--------------------------------------------------
+# - EC2service(PAN) AZ#1
+#--------------------------------------------------
+  RouteTableOPEC2PAN1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameOPEC2PAN1]
+  RouteAssocOPEC2PAN1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableOPEC2PAN1
+    Properties:
+      RouteTableId: !Ref RouteTableOPEC2PAN1
+      SubnetId: !Ref Subnet1OPEC2PAN
+
+
+#--------------------------------------------------
+# - EC2service(PAN) AZ#2
+#--------------------------------------------------
+  RouteTableOPEC2PAN2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameOPEC2PAN2 ]
+  RouteAssocOPEC2PAN2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableOPEC2PAN2
+    Properties:
+      RouteTableId: !Ref RouteTableOPEC2PAN2
+      SubnetId: !Ref Subnet2OPEC2PAN
+
+
+#--------------------------------------------------
+# - EC2service(NPN)  AZ#1
+#--------------------------------------------------
+  RouteTableOPEC2NPN1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameOPEC2NPN1 ]
+  RouteAssocOPEC2NPN1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableOPEC2NPN1
+    Properties:
+      RouteTableId: !Ref RouteTableOPEC2NPN1
+      SubnetId: !Ref Subnet1OPEC2NPN
+
+
+#--------------------------------------------------
+# - EC2service(NPN)  AZ#2
+#--------------------------------------------------
+  RouteTableOPEC2NPN2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameOPEC2NPN2 ]
+  RouteAssocOPEC2NPN2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableOPEC2NPN2
+    Properties:
+      RouteTableId: !Ref RouteTableOPEC2NPN2
+      SubnetId: !Ref Subnet2OPEC2NPN
+#--------------------------------------------------
+# - AWS Service(PAN)
+#--------------------------------------------------
+  RouteTableAWSPAN:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameAWSPAN ]
+  RouteAssocAWSPAN1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableAWSPAN
+    Properties:
+      RouteTableId: !Ref RouteTableAWSPAN
+      SubnetId: !Ref Subnet1AWSPAN
+  RouteAssocAWSPAN2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableAWSPAN
+    Properties:
+      RouteTableId: !Ref RouteTableAWSPAN
+      SubnetId: !Ref Subnet2AWSPAN
+          
+#--------------------------------------------------
+# - AWS Service(NPN)#1
+#--------------------------------------------------
+  RouteTableAWSNPN1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameAWSNPN1 ]
+  RouteAssocAWSNPN1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableAWSNPN1
+    Properties:
+      RouteTableId: !Ref RouteTableAWSNPN1
+      SubnetId: !Ref Subnet1AWSNPN
+
+
+#--------------------------------------------------
+# - AWS Service(NPN)#2
+#--------------------------------------------------
+  RouteTableAWSNPN2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !FindInMap [Param, Name, RouteTableNameAWSNPN2 ]
+
+  RouteAssocAWSNPN2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: RouteTableAWSNPN2
+    Properties:
+      RouteTableId: !Ref RouteTableAWSNPN2
+      SubnetId: !Ref Subnet2AWSNPN
+
+##---------------------------------------------------------------------
+## Route
+##---------------------------------------------------------------------
+##--------------------------------------------------
+## - DMZ(NPN) for OPE
+##--------------------------------------------------
+#  RouteOPDZNPN:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableOPDZNPN
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableOPDZNPN
+##      GatewayId: !Ref IGW
+##--------------------------------------------------
+## - EC2 service(PAN) AZ#1
+##--------------------------------------------------
+#  RouteOPEC2PAN1:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableOPEC2PAN1
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableOPEC2PAN1
+##      NatGatewayId: !Ref NATGatewaySubnet1OPDZNPN               #natgateway�Ⴄ���ǂ܂�����͂����B
+#
+##--------------------------------------------------
+## - EC2 service(PAN) AZ#2
+##--------------------------------------------------
+#  RouteOPEC2PAN2:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableOPEC2PAN2
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableOPEC2PAN2
+##      NatGatewayId: !Ref NATGatewaySubnet2OPDZNPN               #natgateway�Ⴄ���ǂ܂�����͂����B
+##--------------------------------------------------
+## - EC2service(NPN)  AZ#1
+##--------------------------------------------------
+#  RouteOPEC2NPN1:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableOPEC2NPN1
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableOPEC2NPN1
+##      NatGatewayId: !Ref NATGatewaySubnet1OPDZNPN
+##--------------------------------------------------
+## - EC2service(NPN)  AZ#2
+##--------------------------------------------------
+#  RouteOPEC2NPN2:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableOPEC2NPN2
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableOPEC2NPN2
+##      NatGatewayId: !Ref NATGatewaySubnet2OPDZNPN
+##--------------------------------------------------
+## - AWS(NPN)  
+##--------------------------------------------------
+#  RouteAWSNPN1:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableAWSNPN1
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableAWSNPN1
+##      NatGatewayId: !Ref NATGatewaySubnet1OPDZNPN 
+#          
+#  RouteAWSNPN2:
+#    Type: AWS::EC2::Route
+#    DependsOn: RouteTableAWSNPN2
+#    Properties:
+#      DestinationCidrBlock: !FindInMap [Param, CIDR, ALL ]
+#      RouteTableId: !Ref RouteTableAWSNPN2
+##      NatGatewayId: !Ref NATGatewaySubnet2OPDZNPN            
+
+#---------------------------------------------------------------------
+# Create VPC Endpoint
+#---------------------------------------------------------------------
+#--------------------------------------------------
+# Endpoint for S3
+#--------------------------------------------------
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn: [RouteTableOPEC2PAN1,RouteTableOPEC2PAN2,RouteTableOPEC2NPN1, RouteTableOPEC2NPN2, RouteTableAWSNPN1,RouteTableAWSNPN2]
+    Properties: 
+      VpcId: !Ref VPC
+          
+      RouteTableIds:
+        - !Ref RouteTableOPEC2PAN1
+        - !Ref RouteTableOPEC2PAN2
+        - !Ref RouteTableOPEC2NPN1
+        - !Ref RouteTableOPEC2NPN2
+        - !Ref RouteTableAWSNPN1
+        - !Ref RouteTableAWSNPN2
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcEndpointType: Gateway
+
+
+Outputs:
+
+  VPC:
+    Value: !Ref VPC
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outVPCId ]
+
+  Subnet1OPDZNPN:
+    Value: !Ref Subnet1OPDZNPN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet1OPDZNPN ]
+  Subnet2OPDZNPN:
+    Value: !Ref Subnet2OPDZNPN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet2OPDZNPN ]
+
+  Subnet1AWSPAN:
+    Value: !Ref Subnet1AWSPAN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet1AWSPAN ]
+  Subnet2AWSPAN:
+    Value: !Ref Subnet2AWSPAN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet2AWSPAN ]
+  Subnet1AWSNPN:
+    Value: !Ref Subnet1AWSNPN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet1AWSNPN ]
+  Subnet2AWSNPN:
+    Value: !Ref Subnet2AWSNPN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet2AWSNPN ]
+
+  Subnet1OPEC2PAN:
+    Value: !Ref Subnet1OPEC2PAN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet1OPEC2PAN ]
+  Subnet2OPEC2PAN:
+    Value: !Ref Subnet2OPEC2PAN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet2OPEC2PAN ]
+  Subnet1OPEC2NPN:
+    Value: !Ref Subnet1OPEC2NPN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet1OPEC2NPN ]
+  Subnet2OPEC2NPN:
+    Value: !Ref Subnet2OPEC2NPN
+    Export: 
+      Name: 
+        !Join
+          - ''
+          - - !Sub "${AWS::StackName}-OUT-"
+            - !FindInMap [Output, Name, outSubnet2OPEC2NPN ]
+
+
+#  IGW:
+#    Value: !Ref IGW
+#    Export: 
+#      Name: 
+#        !Join
+#          - ''
+#          - - !Sub "${AWS::StackName}-OUT-"
+#            - !FindInMap [Output, Name, outIGW ]
+#
+#  NATGatewaySubnet1OPDZNPN:
+#    Value: !Ref NATGatewaySubnet1OPDZNPN
+#    Export: 
+#      Name: 
+#        !Join
+#          - ''
+#          - - !Sub "${AWS::StackName}-OUT-"
+#            - !FindInMap [Output, Name, outNGW1SV ]
+#  NATGatewaySubnet2OPDZNPN:
+#    Value: !Ref NATGatewaySubnet2OPDZNPN
+#    Export: 
+#      Name: 
+#        !Join
+#          - ''
+#          - - !Sub "${AWS::StackName}-OUT-"
+#            - !FindInMap [Output, Name, outNGW2SV ]
+
+  RouteTableOPEC2PAN1:
+    Value: !Ref RouteTableOPEC2PAN1
+    Export:
+      Name: !FindInMap [Output, Name, outRouteTableOPEC2PAN1 ]
+      
+  RouteTableOPEC2PAN2:
+    Value: !Ref RouteTableOPEC2PAN2
+    Export:
+      Name: !FindInMap [Output, Name, outRouteTableOPEC2PAN2 ]
+
+  RouteTableOPEC2NPN1:
+    Value: !Ref RouteTableOPEC2NPN1
+    Export:
+      Name: !FindInMap [Output, Name, outRouteTableOPEC2NPN1 ]
+      
+  RouteTableOPEC2NPN2:
+    Value: !Ref RouteTableOPEC2NPN2
+    Export:
+      Name: !FindInMap [Output, Name, outRouteTableOPEC2NPN2 ]
+
